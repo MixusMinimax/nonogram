@@ -2,33 +2,69 @@ table {
     margin: auto;
     border-spacing: 0;
     border-collapse: collapse;
-    tbody {
-        border: 3px solid rgb(122, 122, 122);
-    }
 
-    th {
-        .segment {
-            vertical-align: bottom;
-        }
-    }
+    $border: 3px solid rgb(122, 122, 122);
+
     td {
         padding: 0;
         margin: 0;
     }
+
+    tbody tr {
+        td:nth-child(2) {
+            border-left: $border;
+        }
+        td:last-child {
+            border-right: $border;
+        }
+        &:last-child td {
+            border-bottom: $border;
+        }
+        &:first-child td {
+            border-top: $border;
+        }
+
+        .field-cell {
+            border: 2px solid rgb(255, 255, 255);
+            border-radius: 15%;
+            background-color: rgb(228, 228, 228);
+            width: 64px;
+            height: 64px;
+
+            &.marked {
+            background-color: rgb(22, 22, 22);
+            }
+
+            &.unmarked {
+                background-color: red;
+            }
+        }
+    }
+
     .segment {
+        align-items: center;
         background-color: rgb(223, 223, 255);
         border-radius: 10px;
-        height: 6.5em;
-        margin: 0px 1px;
-        margin-bottom: 3px;
+        margin: 1px 0px;
         display: flex;
         justify-content: flex-end;
-        flex-direction: column;
-        padding: 4px 0px;
+        padding: 0px 4px;
+        height: 64px;
+        width: 6.5em;
         .segment-number {
             font-size: 25px;
             line-height: 1.4em;
+            width: 0.9em;
         }
+    }
+
+    thead .segment {
+        width: inherit;
+        height: 6.5em;
+        margin: 0px 1px;
+        margin-bottom: 3px;
+        flex-direction: column;
+        padding: 4px 0px;
     }
 }
 
@@ -41,21 +77,5 @@ table {
     gap: 2px;
     .heart {
         display: inline-block;
-    }
-}
-
-.field-cell {
-    border: 2px solid rgb(255, 255, 255);
-    border-radius: 15%;
-    background-color: rgb(228, 228, 228);
-    width: 64px;
-    height: 64px;
-
-    &.marked {
-      background-color: rgb(22, 22, 22);
-    }
-
-    &.unmarked {
-        background-color: red;
     }
 }

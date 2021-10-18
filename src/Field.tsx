@@ -14,7 +14,8 @@ type FieldProps = {
 
 type FieldState = {
   health: { current: number, max: number },
-  fields: {x: number, y: number, state?: CellState}[][],
+  fields: { x: number, y: number, state?: CellState }[][],
+  segments: { columns: number[][], rows: number[][] },
   dragStart: { x: number, y: number },
   lastDraggedCell: number,
   dragging: boolean,
@@ -30,14 +31,16 @@ class Field extends Component<FieldProps, FieldState> {
 
   reset(props: FieldProps, setState = false): void {
     const health = props.health ?? 5
-    const state : FieldState = {
+    const state: FieldState = {
       health: { current: health, max: health },
       fields: [],
+      segments: { columns: [], rows: [] },
       dragging: false,
-      dragStart: {x: 0, y: 0},
+      dragStart: { x: 0, y: 0 },
       dragButton: 0,
       lastDraggedCell: 0,
     }
+
     for (let y = 0; y < props.height; ++y) {
       state.fields.push([])
       for (let x = 0; x < props.width; ++x) {
@@ -49,6 +52,37 @@ class Field extends Component<FieldProps, FieldState> {
         })
       }
     }
+
+    state.segments.columns = Array.from(Array(this.props.width), (_, x) => {
+      const segments: number[] = []
+      let lastWasMarked = false
+      for (let y = 0; y < this.props.height; ++y) {
+        const isMarked = this.props.solution[y][x]
+        if (isMarked && lastWasMarked)
+          segments[segments.length - 1]++
+        else if (isMarked)
+          segments.push(1)
+        lastWasMarked = isMarked
+      }
+      return segments
+    })
+
+    state.segments.rows = Array.from(Array(this.props.height), (_, y) => {
+      const segments: number[] = []
+      let lastWasMarked = false
+      for (let x = 0; x < this.props.width; ++x) {
+        const isMarked = this.props.solution[y][x]
+        if (isMarked && lastWasMarked)
+          segments[segments.length - 1]++
+        else if (isMarked)
+          segments.push(1)
+        lastWasMarked = isMarked
+      }
+      return segments
+    })
+              
+
+
     if (setState)
       this.setState(this.state)
     else
@@ -138,27 +172,23 @@ class Field extends Component<FieldProps, FieldState> {
         <table>  
           <thead>
             <tr>
+              <th />
               {
-                Array.from(Array(this.props.width), (_, x) => {
-                  const segments: number[] = []
-                  let lastWasMarked = false
-                  for (let y = 0; y < this.props.height; ++y) {
-                    const isMarked = this.props.solution[y][x]
-                    if (isMarked && lastWasMarked)
-                      segments[segments.length - 1]++
-                    else if (isMarked)
-                      segments.push(1)
-                    lastWasMarked = isMarked
-                  }
-                  return <th><div className="segment">{ segments.map(seg => <div className="segment-number">{seg}</div>) }</div></th>
-                })
+                this.state.segments.columns.map(segments =>
+                  <th><div className="segment"> {
+                    segments.map(seg => <div className="segment-number">{seg}</div>)
+                  } </div></th>
+                )
               }
             </tr>
           </thead>
 
           <tbody onMouseLeave={$event => this.mouseUp($event)}>
-          {this.state.fields.map(row =>
+          {this.state.fields.map((row, y) =>
             <tr>
+              <th><div className="segment"> {
+                this.state.segments.rows[y].map(seg => <div className="segment-number">{seg}</div>)
+              } </div></th>
               {
                 row.map(cell =>
                   <td
