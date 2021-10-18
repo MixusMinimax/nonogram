@@ -91,7 +91,7 @@ class Field extends Component<FieldProps, FieldState> {
           x = pos.x
           y = coord
         }
-        this.markCell(x, y, 2 - this.state.dragButton)
+        this.markCell(x, y, this.state.dragButton)
       }
       this.setState({ lastDraggedCell: this.state.dragDirection === Axis.X ? pos.x : pos.y })
       this.markCell(pos.x, pos.y, this.state.dragButton)
