@@ -1,17 +1,20 @@
 import React, { Component } from 'react'
 import './Field.scss'
 
-type CellState = 'none' | 'marked' | 'unmarked'
+export type CellState = 'none' | 'marked' | 'unmarked'
 enum Axis { X, Y }
 
 type FieldProps = {
   width: number,
   height: number,
+  health?: number,
+  initializedStates: boolean[][], // if true, initializes the cell to the solution
+  solution: boolean[][], // if true, marked is the solution.
 }
 
 type FieldState = {
+  health: { current: number, max: number },
   fields: {x: number, y: number, state?: CellState}[][],
-  color: string,
   dragStart: { x: number, y: number },
   lastDraggedCell: number,
   dragging: boolean,
@@ -22,9 +25,10 @@ type FieldState = {
 class Field extends Component<FieldProps, FieldState> {
   constructor(props: FieldProps) {
     super(props)
+    const health = props.health ?? 5
     this.state = {
+      health: { current: health, max: health },
       fields: [],
-      color: 'red',
       dragging: false,
       dragStart: {x: 0, y: 0},
       dragButton: 0,
@@ -33,13 +37,22 @@ class Field extends Component<FieldProps, FieldState> {
     for (let y = 0; y < props.height; ++y) {
       this.state.fields.push([])
       for (let x = 0; x < props.width; ++x) {
-        this.state.fields[y].push({x, y, state: 'none'})
+        this.state.fields[y].push({
+          x, y,
+          state: props.initializedStates[y][x]
+            ? (props.solution[y][x] ? 'marked' : 'unmarked')
+            : 'none',
+        })
       }
     }
   }
 
   markCell(x: number, y: number, button: number): void {
     if (this.state.fields[y][x].state != 'none') return
+    if (this.state.health.current == 0) {
+      this.setState({ dragging: false })
+      return
+    }
     let s: CellState | undefined
     switch (button) {
       case 0:
@@ -51,13 +64,18 @@ class Field extends Component<FieldProps, FieldState> {
       default:
         return
     }
-    this.state.fields[y][x].state = s || this.state.fields[y][x].state
-    this.setState({fields: this.state.fields, dragging: true})
+    const correct: CellState = this.props.solution[y][x] ? 'marked' : 'unmarked'
+    this.state.fields[y][x].state = correct
+    this.setState({fields: this.state.fields})
+
+    if (correct != s) {
+      this.setState({ dragging: false, health: {...this.state.health, current: this.state.health.current - 1}})
+    }
   }
 
   mouseDown(x: number, y: number, event: React.MouseEvent): void {
     event.preventDefault()
-    this.setState({ dragStart: {x, y}, dragButton: event.button })
+    this.setState({ dragStart: {x, y}, dragButton: event.button, dragging: true })
     this.markCell(x, y, event.button)
   }
 
@@ -101,8 +119,14 @@ class Field extends Component<FieldProps, FieldState> {
   render(): JSX.Element {
     return (
       <div>
-        <h2>Field! Dimensions:{ this.props.width }x{ this.props.height }</h2>
-        <p>Color: { this.state.color }</p>
+        <h2>Field works! Dimensions:{this.props.width}x{this.props.height}</h2>
+        <div className="health">
+          {
+            Array.from(Array(this.state.health.max), (_, i) => {
+              return <div className="heart">{ i < this.state.health.current ? '❤️' : '🤍' }</div>
+            })
+          }
+        </div>
         <table
           onMouseLeave={$event => this.mouseUp($event)}
         >{this.state.fields.map(row =>
