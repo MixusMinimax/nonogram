@@ -25,8 +25,12 @@ type FieldState = {
 class Field extends Component<FieldProps, FieldState> {
   constructor(props: FieldProps) {
     super(props)
+    this.reset(props)
+  }
+
+  reset(props: FieldProps, setState = false): void {
     const health = props.health ?? 5
-    this.state = {
+    const state : FieldState = {
       health: { current: health, max: health },
       fields: [],
       dragging: false,
@@ -35,9 +39,9 @@ class Field extends Component<FieldProps, FieldState> {
       lastDraggedCell: 0,
     }
     for (let y = 0; y < props.height; ++y) {
-      this.state.fields.push([])
+      state.fields.push([])
       for (let x = 0; x < props.width; ++x) {
-        this.state.fields[y].push({
+        state.fields[y].push({
           x, y,
           state: props.initializedStates[y][x]
             ? (props.solution[y][x] ? 'marked' : 'unmarked')
@@ -45,6 +49,10 @@ class Field extends Component<FieldProps, FieldState> {
         })
       }
     }
+    if (setState)
+      this.setState(this.state)
+    else
+      this.state = state
   }
 
   markCell(x: number, y: number, button: number): void {
@@ -127,23 +135,47 @@ class Field extends Component<FieldProps, FieldState> {
             })
           }
         </div>
-        <table
-          onMouseLeave={$event => this.mouseUp($event)}
-        >{this.state.fields.map(row =>
-          <tr>{
-            row.map(cell =>
-              <th
-                onMouseDown={$event => this.mouseDown(cell.x, cell.y, $event)}
-                onMouseUp={$event => this.mouseUp($event)}
-                onMouseMove={() => this.mouseMove(cell.x, cell.y)}
-              >
-                <div
-                  className={ `field-cell ${cell.state}` }
-                />
-              </th>
-            )
-          }</tr>
-        ) }</table>
+        <table>  
+          <thead>
+            <tr>
+              {
+                Array.from(Array(this.props.width), (_, x) => {
+                  const segments: number[] = []
+                  let lastWasMarked = false
+                  for (let y = 0; y < this.props.height; ++y) {
+                    const isMarked = this.props.solution[y][x]
+                    if (isMarked && lastWasMarked)
+                      segments[segments.length - 1]++
+                    else if (isMarked)
+                      segments.push(1)
+                    lastWasMarked = isMarked
+                  }
+                  return <th><div className="segment">{ segments.map(seg => <div className="segment-number">{seg}</div>) }</div></th>
+                })
+              }
+            </tr>
+          </thead>
+
+          <tbody onMouseLeave={$event => this.mouseUp($event)}>
+          {this.state.fields.map(row =>
+            <tr>
+              {
+                row.map(cell =>
+                  <td
+                    onMouseDown={$event => this.mouseDown(cell.x, cell.y, $event)}
+                    onMouseUp={$event => this.mouseUp($event)}
+                    onMouseMove={() => this.mouseMove(cell.x, cell.y)}
+                  >
+                    <div
+                      className={ `field-cell ${cell.state}` }
+                    />
+                  </td>
+                )
+              }
+            </tr>
+          ) }
+          </tbody>
+        </table>
       </div>
     )
   }
