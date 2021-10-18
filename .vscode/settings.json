@@ -1,0 +1,19 @@
+{
+    "eslint.validate": [
+        "react",
+        "typescript",
+        "typescriptreact"
+    ],
+    "eslint.format.enable": true,
+    "editor.codeActionsOnSave": {
+        "source.fixAll.eslint": true
+    },
+    "vetur.validation.template": false,
+    "editor.formatOnPaste": true,
+    "editor.formatOnType": true,
+    "editor.formatOnSave": true,
+    "files.eol": "\n",
+    "[typescriptreact]": {
+        "editor.tabSize": 2
+    }
+}
