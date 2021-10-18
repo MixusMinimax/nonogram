@@ -18,7 +18,10 @@
         ],
         "comma-dangle": [
             "warn",
-            "always-multiline"
+            {
+                "objects": "always-multiline",
+                "functions": "only-multiline"
+            }
         ],
         "comma-spacing": [
             "warn",

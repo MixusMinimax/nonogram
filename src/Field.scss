@@ -1,0 +1,26 @@
+table {
+    border-spacing: 0;
+    border-style: solid;
+    border-width: 3px;
+    border-color: rgb(122, 122, 122);
+}
+th {
+    padding: 0;
+    margin: 0;
+}
+
+.field-cell {
+    border: 2px solid rgb(255, 255, 255);
+    border-radius: 15%;
+    background-color: rgb(228, 228, 228);
+    width: 64px;
+    height: 64px;
+
+    &.marked {
+      background-color: rgb(22, 22, 22);
+    }
+
+    &.unmarked {
+        background-color: red;
+    }
+}
