@@ -94,6 +94,7 @@ table {
             font-size: 25px;
             line-height: 1.4em;
             width: 0.9em;
+            transition: color 0.1s ease;
 
             &.completed {
                 color: rgb(122, 122, 122);
