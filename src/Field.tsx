@@ -15,7 +15,7 @@ type FieldProps = {
 
 type FieldState = {
   health: { current: number, max: number },
-  fields: { x: number, y: number, state?: CellState }[][],
+  fields: { x: number, y: number, wrong: boolean, state?: CellState }[][],
   segments: { columns: number[][], rows: number[][] },
   dragStart: { x: number, y: number },
   lastDraggedCell: number,
@@ -52,6 +52,7 @@ class Field extends Component<FieldProps, FieldState> {
       for (let x = 0; x < props.width; ++x) {
         state.fields[y].push({
           x, y,
+          wrong: false,
           state: props.initializedStates[y][x]
             ? (props.solution[y][x] ? 'marked' : 'unmarked')
             : 'none',
@@ -117,7 +118,12 @@ class Field extends Component<FieldProps, FieldState> {
     this.setState({fields: this.state.fields})
 
     if (correct != s) {
-      this.setState({ dragging: false, health: {...this.state.health, current: this.state.health.current - 1}})
+      this.state.fields[y][x].wrong = true
+      this.setState({
+        fields: this.state.fields,
+        dragging: false,
+        health: { ...this.state.health, current: this.state.health.current - 1 },
+      })
     }
   }
 
@@ -203,7 +209,7 @@ class Field extends Component<FieldProps, FieldState> {
                     onMouseMove={() => this.mouseMove(cell.x, cell.y)}
                   >
                     <div
-                      className={ `field-cell ${cell.state}` }
+                      className={ `field-cell ${cell.state} ${cell.wrong ? 'wrong' : ''}` }
                     >
                       <div>╳</div>
                     </div>

@@ -1,3 +1,7 @@
+@keyframes flash-wrong {
+    50%  { background-color: rgb(248, 63, 63); }
+}
+
 table {
     margin: auto;
     border-spacing: 0;
@@ -41,7 +45,7 @@ table {
             }
 
             &.wrong {
-                background-color: red;
+                animation: flash-wrong 0.5s ease-out;
             }
 
             div {
