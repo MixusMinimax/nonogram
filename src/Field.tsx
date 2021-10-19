@@ -4,6 +4,11 @@ import './Field.scss'
 export type CellState = 'none' | 'marked' | 'unmarked'
 enum Axis { X, Y }
 
+type SegmentNumber = {
+  size: number,
+  completed: boolean,
+}
+
 type FieldProps = {
   width: number,
   height: number,
@@ -16,7 +21,7 @@ type FieldProps = {
 type FieldState = {
   health: { current: number, max: number },
   fields: { x: number, y: number, wrong: boolean, state?: CellState }[][],
-  segments: { columns: number[][], rows: number[][] },
+  segments: { columns: SegmentNumber[][], rows: SegmentNumber[][] },
   dragStart: { x: number, y: number },
   lastDraggedCell: number,
   dragging: boolean,
@@ -33,10 +38,10 @@ class Field extends Component<FieldProps, FieldState> {
 
   constructor(props: FieldProps) {
     super(props)
-    this.reset(props)
+    this.reset(props, false)
   }
 
-  reset(props: FieldProps, setState = false): void {
+  reset(props: FieldProps, setState = true): void {
     const state: FieldState = {
       health: { current: props.health, max: props.health },
       fields: [],
@@ -60,40 +65,34 @@ class Field extends Component<FieldProps, FieldState> {
       }
     }
 
-    state.segments.columns = Array.from(Array(this.props.width), (_, x) => {
-      const segments: number[] = []
-      let lastWasMarked = false
-      for (let y = 0; y < this.props.height; ++y) {
-        const isMarked = this.props.solution[y][x]
-        if (isMarked && lastWasMarked)
-          segments[segments.length - 1]++
-        else if (isMarked)
-          segments.push(1)
-        lastWasMarked = isMarked
-      }
-      return segments
-    })
-
-    state.segments.rows = Array.from(Array(this.props.height), (_, y) => {
-      const segments: number[] = []
-      let lastWasMarked = false
-      for (let x = 0; x < this.props.width; ++x) {
-        const isMarked = this.props.solution[y][x]
-        if (isMarked && lastWasMarked)
-          segments[segments.length - 1]++
-        else if (isMarked)
-          segments.push(1)
-        lastWasMarked = isMarked
-      }
-      return segments
-    })
-              
-
+    [state.segments.rows, state.segments.columns] = [Axis.X, Axis.Y].map(axis => 
+      Array.from(Array(this.props[axis == Axis.X ? 'height' : 'width']), (_, i) => {
+        const segments: SegmentNumber[] = []
+        let lastWasMarked = false
+        for (let j = 0; j < this.props[axis == Axis.X ? 'width' : 'height']; ++j) {
+          const isMarked = axis == Axis.X ? this.props.solution[i][j] : this.props.solution[j][i]
+          if (isMarked && lastWasMarked)
+            segments[segments.length - 1].size++
+          else if (isMarked)
+            segments.push({ size: 1, completed: false })
+          lastWasMarked = isMarked
+        }
+        return segments
+      })  
+    )
 
     if (setState)
       this.setState(this.state)
     else
       this.state = state
+
+    for (let y = 0; y < props.height; ++y) {
+      for (let x = 0; x < props.width; ++x) {
+        if (props.initializedStates[y][x]) {
+          this.updateSegments(x, y, false)
+        }
+      }
+    }
   }
 
   markCell(x: number, y: number, button: number): void {
@@ -115,17 +114,74 @@ class Field extends Component<FieldProps, FieldState> {
     }
     const correct: CellState = this.props.solution[y][x] ? 'marked' : 'unmarked'
     this.state.fields[y][x].state = correct
-    this.setState({fields: this.state.fields})
 
     if (correct != s) {
       this.state.fields[y][x].wrong = true
       this.setState({
-        fields: this.state.fields,
         dragging: false,
         health: { ...this.state.health, current: this.state.health.current - 1 },
       })
     }
+
+    this.setState({ fields: this.state.fields })
+    
+    this.updateSegments(x, y)
   }
+
+  updateSegments(x: number, y: number, setState = true): void {
+    for (const axis of [Axis.X, Axis.Y]) {
+
+      // check if col/row is completely done:
+
+      let isDone = true
+      const offAxis = axis == Axis.X ? y : x
+      const length = axis == Axis.X ? this.props.width : this.props.height
+      const getAt = function <T>(t: T[][], on: number, off: number): T {
+        return axis == Axis.X ? t[off][on] : t[on][off]
+      }
+      for (let i = 0; i < length; ++i) {
+        if (getAt(this.props.solution, i, offAxis) && getAt(this.state.fields, i, offAxis).state != 'marked') {
+          isDone = false
+          break
+        }
+      }
+      if (isDone) {
+        for (const seg of this.state.segments[axis == Axis.X ? 'rows' : 'columns'][offAxis])
+          seg.completed = true
+        // TODO: cascade
+      } else {
+        // check if col/row is partially done from each side:
+        for (let direction = 0; direction < 2; ++direction) {
+          const line = this.state.segments[axis == Axis.X ? 'rows' : 'columns'][offAxis]
+          let currentIndex = 0
+          let count = 0
+          for (let _i = 0; _i < length; ++_i) {
+            let i: number = _i
+            let currentIndexActual: number = currentIndex
+            if (direction == 1) {
+              i = length - 1 - _i
+              currentIndexActual = line.length - 1 - currentIndex
+            }
+            if (getAt(this.state.fields, i, offAxis).state == 'marked')
+              count++
+            else {
+              if (count == line[currentIndexActual].size) {
+                line[currentIndexActual].completed = true
+                ++currentIndex
+              }
+              count = 0
+              if (getAt(this.state.fields, i, offAxis).state == 'none')
+                break
+            }
+          }
+        }
+      }
+    }
+    if (setState)
+      this.setState({ segments: this.state.segments })
+  }
+
+  // Events:
 
   mouseDown(x: number, y: number, event: React.MouseEvent): void {
     event.preventDefault()
@@ -187,8 +243,8 @@ class Field extends Component<FieldProps, FieldState> {
               <th />
               {
                 this.state.segments.columns.map(segments =>
-                  <th><div className="segment"> {
-                    segments.map(seg => <div className="segment-number">{seg}</div>)
+                  <th><div className={`segment ${segments.every(seg => seg.completed) ? 'completed' : ''}`}> {
+                    segments.map(seg => <div className={`segment-number ${seg.completed ? 'completed' : ''}`}>{seg.size}</div>)
                   } </div></th>
                 )
               }
@@ -198,8 +254,8 @@ class Field extends Component<FieldProps, FieldState> {
           <tbody onMouseLeave={$event => this.mouseUp($event)}>
           {this.state.fields.map((row, y) =>
             <tr>
-              <th><div className="segment"> {
-                this.state.segments.rows[y].map(seg => <div className="segment-number">{seg}</div>)
+              <th><div className={`segment ${this.state.segments.rows[y].every(seg => seg.completed) ? 'completed' : ''}`}> {
+                this.state.segments.rows[y].map(seg => <div className={`segment-number ${seg.completed ? 'completed' : ''}`}>{seg.size}</div>)
               } </div></th>
               {
                 row.map(cell =>
