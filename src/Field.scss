@@ -4,7 +4,6 @@
 
 @keyframes flash-done {
     50%  { background-color: rgb(142, 174, 211); }
-    to   { background-color: rgb(246, 246, 251); }
 };
 
 table {
@@ -34,6 +33,7 @@ table {
         }
 
         .field-cell {
+            position: relative;
             border: 2px solid rgb(255, 255, 255);
             border-radius: 15%;
             background-color: rgb(228, 228, 228);
@@ -45,7 +45,7 @@ table {
                 background-color: rgb(22, 22, 22);
             }
 
-            &.unmarked div {
+            &.unmarked div.x {
                 font-size: 45px;
             }
 
@@ -53,7 +53,7 @@ table {
                 animation: flash-wrong 0.5s ease-out;
             }
 
-            div {
+            div.x {
                 user-select: none;
                 display: flex;
                 align-items: center;
@@ -64,6 +64,20 @@ table {
                 transform: translateY(-.14em);
                 pointer-events: none;
                 transition: font-size 0.05s ease-out;
+            }
+
+            div.overlay {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                border-radius: 15%;
+                opacity: 0.8;
+            }
+
+            &.completed div.overlay {
+                animation: flash-done 1s ease;
             }
         }
     }
@@ -85,9 +99,9 @@ table {
         &.completed {
             outline-style: solid;
             outline-width: 1px;
-            // background-color: rgb(246, 246, 251);
+            background-color: rgb(246, 246, 251);
             box-shadow: .5px .5px 2px 0px rgb(187, 187, 187);
-            animation: flash-done 0.5s ease forwards;
+            animation: flash-done 0.6s ease;
         }
 
         .segment-number {

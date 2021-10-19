@@ -20,7 +20,7 @@ type FieldProps = {
 
 type FieldState = {
   health: { current: number, max: number },
-  fields: { x: number, y: number, wrong: boolean, state?: CellState }[][],
+  fields: { x: number, y: number, completed: boolean, wrong: boolean, state?: CellState }[][],
   segments: { columns: SegmentNumber[][], rows: SegmentNumber[][] },
   dragStart: { x: number, y: number },
   lastDraggedCell: number,
@@ -57,6 +57,7 @@ class Field extends Component<FieldProps, FieldState> {
       for (let x = 0; x < props.width; ++x) {
         state.fields[y].push({
           x, y,
+          completed: false,
           wrong: false,
           state: props.initializedStates[y][x]
             ? (props.solution[y][x] ? 'marked' : 'unmarked')
@@ -95,7 +96,7 @@ class Field extends Component<FieldProps, FieldState> {
     }
   }
 
-  markCell(x: number, y: number, button: number): void {
+  markCell(x: number, y: number, button: number, setState = true, cascade = true): void {
     if (this.state.fields[y][x].state != 'none') return
     if (this.state.health.current == 0) {
       this.setState({ dragging: false })
@@ -123,12 +124,13 @@ class Field extends Component<FieldProps, FieldState> {
       })
     }
 
-    this.setState({ fields: this.state.fields })
+    if (setState)
+      this.setState({ fields: this.state.fields })
     
-    this.updateSegments(x, y)
+    this.updateSegments(x, y, setState, cascade)
   }
 
-  updateSegments(x: number, y: number, setState = true): void {
+  updateSegments(x: number, y: number, setState = true, cascade = true): void {
     for (const axis of [Axis.X, Axis.Y]) {
 
       // check if col/row is completely done:
@@ -148,7 +150,12 @@ class Field extends Component<FieldProps, FieldState> {
       if (isDone) {
         for (const seg of this.state.segments[axis == Axis.X ? 'rows' : 'columns'][offAxis])
           seg.completed = true
-        // TODO: cascade
+        if (this.props.cascade && cascade) {
+          this.cascade(x, y, axis, true, 20, setState)
+          this.cascade(x, y, axis, false, 20, setState)
+          if (this.state.dragging && setState && axis == this.state.dragDirection)
+            this.setState({ dragging: false })
+        }
       } else {
         // check if col/row is partially done from each side:
         for (let direction = 0; direction < 2; ++direction) {
@@ -179,6 +186,23 @@ class Field extends Component<FieldProps, FieldState> {
     }
     if (setState)
       this.setState({ segments: this.state.segments })
+  }
+
+  cascade(x: number, y: number, axis: Axis, positive: boolean, delay: number, setState = true): void {
+    if (x < 0 || x >= this.props.width || y < 0 || y >= this.props.height)
+      return
+    if (setState) {
+      this.state.fields[y][x].completed = true
+      this.setState({ fields: this.state.fields })
+      setTimeout(() => { this.state.fields[y][x].completed = false; this.setState({ fields: this.state.fields }) }, 1000)
+    }
+    this.markCell(x, y, 2, setState, false)
+    const dx = (axis == Axis.X ? 1 : 0) * (positive ? 1 : -1)
+    const dy = (axis == Axis.X ? 0 : 1) * (positive ? 1 : -1)
+    if (setState)
+      setTimeout(() => { this.cascade(x + dx, y + dy, axis, positive, delay, setState) }, delay)
+    else
+      this.cascade(x + dx, y + dy, axis, positive, delay, setState)
   }
 
   // Events:
@@ -254,7 +278,7 @@ class Field extends Component<FieldProps, FieldState> {
           <tbody onMouseLeave={$event => this.mouseUp($event)}>
           {this.state.fields.map((row, y) =>
             <tr>
-              <th><div className={`segment ${this.state.segments.rows[y].every(seg => seg.completed) ? 'completed' : ''}`}> {
+              <th onMouseEnter={$event => this.mouseUp($event)}><div className={`segment ${this.state.segments.rows[y].every(seg => seg.completed) ? 'completed' : ''}`}> {
                 this.state.segments.rows[y].map(seg => <div className={`segment-number ${seg.completed ? 'completed' : ''}`}>{seg.size}</div>)
               } </div></th>
               {
@@ -265,9 +289,10 @@ class Field extends Component<FieldProps, FieldState> {
                     onMouseMove={() => this.mouseMove(cell.x, cell.y)}
                   >
                     <div
-                      className={ `field-cell ${cell.state} ${cell.wrong ? 'wrong' : ''}` }
+                      className={ `field-cell ${cell.state} ${cell.wrong ? 'wrong' : ''} ${cell.completed ? 'completed' : ''}` }
                     >
-                      <div>╳</div>
+                      <div className="x">╳</div>
+                      <div className="overlay"></div>
                     </div>
                   </td>
                 )

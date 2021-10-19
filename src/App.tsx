@@ -27,7 +27,7 @@ class App extends Component<Record<string, never>, AppState> {
         [false, false, false, false, false, false, true],
         [false, false, false, false, false, true, false],
         [false, false, false, false, true, false, false],
-        [false, false, false, true, false, false, false]
+        [true, false, false, true, true, false, false]
       ],
     }
   }
