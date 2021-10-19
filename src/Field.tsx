@@ -7,9 +7,10 @@ enum Axis { X, Y }
 type FieldProps = {
   width: number,
   height: number,
-  health?: number,
+  health: number,
   initializedStates: boolean[][], // if true, initializes the cell to the solution
   solution: boolean[][], // if true, marked is the solution.
+  cascade: boolean,
 }
 
 type FieldState = {
@@ -24,15 +25,20 @@ type FieldState = {
 }
 
 class Field extends Component<FieldProps, FieldState> {
+
+  static defaultProps = {
+    cascade: false,
+    health: 5,
+  }
+
   constructor(props: FieldProps) {
     super(props)
     this.reset(props)
   }
 
   reset(props: FieldProps, setState = false): void {
-    const health = props.health ?? 5
     const state: FieldState = {
-      health: { current: health, max: health },
+      health: { current: props.health, max: props.health },
       fields: [],
       segments: { columns: [], rows: [] },
       dragging: false,
@@ -198,7 +204,9 @@ class Field extends Component<FieldProps, FieldState> {
                   >
                     <div
                       className={ `field-cell ${cell.state}` }
-                    />
+                    >
+                      <div>╳</div>
+                    </div>
                   </td>
                 )
               }

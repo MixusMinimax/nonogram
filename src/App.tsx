@@ -39,7 +39,13 @@ class App extends Component<Record<string, never>, AppState> {
         className="App"
       >
         <h1>Hello, World!</h1>
-        <Field width={7} height={7} initializedStates={this.state.initializedStates} solution={this.state.solution} />
+        <Field
+          width={7}
+          height={7}
+          initializedStates={this.state.initializedStates}
+          solution={this.state.solution}
+          cascade={true}
+        />
       </div>
     )
   }

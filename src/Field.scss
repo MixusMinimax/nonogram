@@ -30,13 +30,30 @@ table {
             background-color: rgb(228, 228, 228);
             width: 64px;
             height: 64px;
+            transition: background-color 0.05s ease-in-out;
 
             &.marked {
-            background-color: rgb(22, 22, 22);
+                background-color: rgb(22, 22, 22);
             }
 
-            &.unmarked {
+            &.unmarked div {
+                font-size: 45px;
+            }
+
+            &.wrong {
                 background-color: red;
+            }
+
+            div {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                height: 100%;
+                width: 100%;
+                font-size: 0px;
+                transform: translateY(-.14em);
+                pointer-events: none;
+                transition: font-size 0.05s ease-out;
             }
         }
     }
